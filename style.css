@@ -218,17 +218,77 @@ button {
     pointer-events: none;
 }
 
-.diario-header {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    color: #ffb6c1;
-    opacity: 0.9;
-    letter-spacing: 1px;
-    font-weight: bold;
-    text-transform: uppercase;
-    margin-bottom: 12px;
+.diario-toggle {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%) rotate(0deg);
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffebf0;
+    font-size: 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(16px);
+    transition: transform 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease, color 0.25s ease;
 }
+
+.diario-toggle:hover,
+.diario-toggle:focus-visible {
+    transform: translateX(-50%) scale(1.03);
+    background: rgba(255, 255, 255, 0.14);
+    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.22);
+}
+
+.diario-body {
+    transition: opacity 0.32s ease, transform 0.32s ease, max-height 0.32s ease;
+    transform-origin: top center;
+    max-height: 320px;
+    overflow: hidden;
+}
+
+#diario-contenedor.diario-collapsed {
+    transform: translateX(-50%) translateY(18px) scale(0.99);
+    opacity: 0.91;
+}
+
+#diario-contenedor.diario-collapsed .diario-body {
+    opacity: 0;
+    transform: translateY(22px);
+    max-height: 0;
+}
+
+#diario-contenedor.diario-collapsed .diario-toggle {
+    transform: translateX(-50%) rotate(180deg);
+}
+
+#diario-contenedor {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 460px;
+    background: rgba(18, 10, 22, 0.82);
+    border: 1px solid rgba(255, 130, 145, 0.22);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 24px;
+    padding: 30px 20px 20px;
+    box-sizing: border-box;
+    z-index: 50;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55), 0 0 24px rgba(255, 105, 120, 0.08);
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease, box-shadow 0.35s ease;
+    overflow: hidden;
+}
+
 
 #diario-texto {
     color: #ffffff;
@@ -241,36 +301,63 @@ button {
     display: flex;
     align-items: center;
     justify-content: center;
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
-    transition: opacity 0.22s ease, transform 0.22s ease;
-}
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.18);
+        transition: opacity 0.22s ease, transform 0.22s ease;
+    }
 
-#diario-texto.is-changing {
-    opacity: 0;
-    transform: translateY(10px) scale(0.97);
+    .diario-header {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: #ffb6c1;
+        opacity: 0.95;
+        letter-spacing: 1px;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 14px;
+        gap: 14px;
+    }
+
+    .diario-header span:first-child {
+        font-size: 0.76rem;
+        letter-spacing: 1.6px;
+    }
+
+    .diario-header span:last-child {
+        font-size: 0.78rem;
 }
 
 .diario-controles {
     display: flex;
-    justify-content: space-between;
-    gap: 15px;
+    justify-content: center; /* Esto los centra perfectamente */
+    gap: 20px;               /* Separación entre ellos */
+    margin-top: 20px;
+    width: 100%;
 }
-
 .diario-controles button {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 130, 145, 0.2);
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 182, 193, 0.6);
     color: #ffffff;
-    padding: 8px 20px;
-    font-size: 14px;
-    border-radius: 10px;
-    flex: 1;
-    transition: all 0.2s ease;
+    
+    /* Aumentamos el tamaño horizontal */
+    padding: 8px 65px; 
+    
+    border-radius: 25px;
+    font-size: 16px;         /* Texto un poco más grande */
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    /* Esto ayuda a que tengan el mismo tamaño base */
+    flex: 1; 
+    max-width: 150px; 
 }
-
-.diario-controles button:active {
-    background: #ffb6c1;
-    color: #0a060c;
-    transform: scale(0.95);
+/* Efecto al pasar el mouse */
+.diario-controles button:hover {
+    background: rgba(255, 182, 193, 0.3);
+    border-color: #ffb6c1;
+    transform: scale(1.05);
 }
 
 @media (hover: hover) {
@@ -284,3 +371,4 @@ button {
     0% { transform: translateX(-120%); }
     100% { transform: translateX(120%); }
 }
+

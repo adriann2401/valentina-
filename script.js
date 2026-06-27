@@ -1,4 +1,4 @@
-    import * as THREE from 'three';
+import * as THREE from 'three';
     import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
     import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
     import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -272,6 +272,256 @@
     }
     scene.add(nebulaGroup);
 
+    // --- Nebulosas secundarias azul-violeta ---
+    const secondaryNebulaGroup = new THREE.Group();
+    const secondaryNebulaGeo = new THREE.PlaneGeometry(90, 90);
+    const secondaryNebulaCanvas = document.createElement('canvas');
+    secondaryNebulaCanvas.width = 256;
+    secondaryNebulaCanvas.height = 256;
+    const secondaryNebulaCtx = secondaryNebulaCanvas.getContext('2d');
+    const secondaryNebulaGrad = secondaryNebulaCtx.createRadialGradient(128, 128, 0, 128, 128, 128);
+    secondaryNebulaGrad.addColorStop(0, 'rgba(120, 110, 255, 0.16)');
+    secondaryNebulaGrad.addColorStop(0.5, 'rgba(80, 50, 180, 0.08)');
+    secondaryNebulaGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    secondaryNebulaCtx.fillStyle = secondaryNebulaGrad;
+    secondaryNebulaCtx.fillRect(0, 0, 256, 256);
+    const secondaryNebulaTexture = new THREE.CanvasTexture(secondaryNebulaCanvas);
+
+    for (let i = 0; i < 5; i++) {
+        const mat = new THREE.MeshBasicMaterial({
+            map: secondaryNebulaTexture,
+            transparent: true,
+            opacity: 0.12 + Math.random() * 0.12,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            side: THREE.DoubleSide
+        });
+        const mesh = new THREE.Mesh(secondaryNebulaGeo, mat);
+        mesh.position.set(
+            (Math.random() - 0.5) * 110,
+            5 + (Math.random() - 0.5) * 30,
+            -40 + (Math.random() - 0.5) * 40
+        );
+        mesh.lookAt(0, 6.5, 0);
+        mesh.rotation.z = Math.random() * Math.PI;
+        secondaryNebulaGroup.add(mesh);
+    }
+    scene.add(secondaryNebulaGroup);
+
+    // --- Estrellas de polvo estelar centelleante ---
+    const stardustCount = 260;
+    const stardustGeo = new THREE.BufferGeometry();
+    const stardustPositions = new Float32Array(stardustCount * 3);
+    const stardustAlphas = new Float32Array(stardustCount);
+    const stardustColors = new Float32Array(stardustCount * 3);
+    for (let i = 0; i < stardustCount; i++) {
+        const radius = 70 + Math.random() * 40;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos((Math.random() * 2) - 1);
+        const x = Math.cos(theta) * Math.sin(phi) * radius;
+        const y = Math.sin(theta) * Math.sin(phi) * radius * 0.45 + 10;
+        const z = Math.cos(phi) * radius - 20;
+        stardustPositions[i * 3] = x;
+        stardustPositions[i * 3 + 1] = y;
+        stardustPositions[i * 3 + 2] = z;
+        stardustAlphas[i] = 0.15 + Math.random() * 0.25;
+        stardustColors[i * 3] = 0.8;
+        stardustColors[i * 3 + 1] = 0.85;
+        stardustColors[i * 3 + 2] = 1.0;
+    }
+    stardustGeo.setAttribute('position', new THREE.BufferAttribute(stardustPositions, 3));
+    stardustGeo.setAttribute('alpha', new THREE.BufferAttribute(stardustAlphas, 1));
+    stardustGeo.setAttribute('color', new THREE.BufferAttribute(stardustColors, 3));
+    const stardustMaterial = new THREE.ShaderMaterial({
+        vertexShader: `
+            attribute float alpha;
+            varying float vAlpha;
+            varying vec3 vColor;
+            void main() {
+                vAlpha = alpha;
+                vColor = color;
+                vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                gl_PointSize = 2.4 * (110.0 / -mvPosition.z);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `,
+        fragmentShader: `
+            uniform sampler2D pointTexture;
+            varying float vAlpha;
+            varying vec3 vColor;
+            void main() {
+                gl_FragColor = vec4(vColor, vAlpha) * texture2D(pointTexture, gl_PointCoord);
+            }
+        `,
+        uniforms: { pointTexture: { value: particleTexture } },
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        vertexColors: true
+    });
+    const stardustPoints = new THREE.Points(stardustGeo, stardustMaterial);
+    stardustPoints.frustumCulled = false;
+    scene.add(stardustPoints);
+
+    // --- Halo de anillo tenue ---
+    const haloCount = 140;
+    const haloGeo = new THREE.BufferGeometry();
+    const haloPositions = new Float32Array(haloCount * 3);
+    for (let i = 0; i < haloCount; i++) {
+        const angle = (i / haloCount) * Math.PI * 2;
+        const radius = 56 + Math.random() * 6;
+        const x = Math.cos(angle) * radius;
+        const y = (Math.random() - 0.5) * 9 + 8;
+        const z = Math.sin(angle) * radius - 16;
+        haloPositions[i * 3] = x;
+        haloPositions[i * 3 + 1] = y;
+        haloPositions[i * 3 + 2] = z;
+    }
+    haloGeo.setAttribute('position', new THREE.BufferAttribute(haloPositions, 3));
+    const haloMat = new THREE.PointsMaterial({
+        size: 0.8,
+        map: particleTexture,
+        color: 0x8899ff,
+        transparent: true,
+        opacity: 0.16,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+    });
+    const haloRing = new THREE.Points(haloGeo, haloMat);
+    haloRing.frustumCulled = false;
+    scene.add(haloRing);
+
+    // --- Esferas de luz con estela ---
+    const glowSphereCount = 6;
+    const glowSpheres = [];
+    const glowTrails = [];
+    for (let i = 0; i < glowSphereCount; i++) {
+        const mat = new THREE.MeshBasicMaterial({ color: 0xa8c5ff, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false });
+        const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.4, 10, 10), mat);
+        mesh.position.set((Math.random() - 0.5) * 45, 4 + Math.random() * 18, -20 + (Math.random() - 0.5) * 35);
+        glowSpheres.push({ mesh, velocity: new THREE.Vector3((Math.random() - 0.5) * 0.06, (Math.random() - 0.5) * 0.03, (Math.random() - 0.5) * 0.06) });
+        scene.add(mesh);
+
+        const trailGeo = new THREE.BufferGeometry();
+        const trailLen = 16;
+        const trailPositions = new Float32Array(trailLen * 3);
+        trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+        const trailMat = new THREE.LineBasicMaterial({ color: 0xa8c5ff, transparent: true, opacity: 0.22, linewidth: 1 });
+        const trailLine = new THREE.Line(trailGeo, trailMat);
+        glowTrails.push({ line: trailLine, positions: trailPositions, length: trailLen });
+        scene.add(trailLine);
+    }
+
+    // --- Estrellas lejanas con paralaje ---
+    const parallaxStarCount = 100;
+    const parallaxStarGeo = new THREE.BufferGeometry();
+    const parallaxStarPositions = new Float32Array(parallaxStarCount * 3);
+    const parallaxStarVelocities = [];
+    for (let i = 0; i < parallaxStarCount; i++) {
+        const radius = 110 + Math.random() * 90;
+        const angle = Math.random() * Math.PI * 2;
+        const y = (Math.random() - 0.5) * 35 + 5;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius - 10;
+        parallaxStarPositions[i * 3] = x;
+        parallaxStarPositions[i * 3 + 1] = y;
+        parallaxStarPositions[i * 3 + 2] = z;
+        parallaxStarVelocities.push({ x, y, z });
+    }
+    parallaxStarGeo.setAttribute('position', new THREE.BufferAttribute(parallaxStarPositions, 3));
+    const parallaxStarMat = new THREE.PointsMaterial({ size: 0.2, color: 0xcce8ff, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false });
+    const parallaxStars = new THREE.Points(parallaxStarGeo, parallaxStarMat);
+    parallaxStars.frustumCulled = false;
+    scene.add(parallaxStars);
+
+    // --- Constelaciones conectadas ---
+    const constellationPoints = [];
+    const constellationSegments = [];
+    for (let i = 0; i < 12; i++) {
+        const pos = new THREE.Vector3((Math.random() - 0.5) * 140, (Math.random() - 0.5) * 40 + 5, -80 + (Math.random() - 0.5) * 50);
+        constellationPoints.push(pos);
+    }
+    for (let i = 0; i < constellationPoints.length - 1; i++) {
+        if (Math.random() < 0.55) {
+            constellationSegments.push(constellationPoints[i], constellationPoints[i + 1]);
+        }
+    }
+    const constellationGeo = new THREE.BufferGeometry().setFromPoints(constellationSegments);
+    const constellationMat = new THREE.LineBasicMaterial({ color: 0xb7c2ff, transparent: true, opacity: 0.14, linewidth: 1 });
+    const constellationLines = new THREE.LineSegments(constellationGeo, constellationMat);
+    scene.add(constellationLines);
+
+    // NUEVO: Campo de partículas de Valentina de alto detalle y color rojo con perspectiva y ángulo modificado
+function createValentinaPoints() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 300;
+    const ctx = canvas.getContext('2d');
+    
+    // Texto
+    ctx.fillStyle = '#ffb6c1';
+    ctx.font = 'bold 150px "Arial", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Valentina', canvas.width / 2 - 60, 200);
+
+    // Corazón en ROJO INTENSO
+    ctx.fillStyle = '#ff0000'; 
+    ctx.font = 'bold 180px "Arial", sans-serif';
+    ctx.fillText('♥', canvas.width - 150, 215);
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const positions = [];
+    const colors = [];
+    
+    for (let y = 0; y < canvas.height; y += 2) {
+        for (let x = 0; x < canvas.width; x += 2) {
+            const idx = (y * canvas.width + x) * 4;
+            if (imageData.data[idx + 3] > 50) {
+                // Determinamos si es parte del corazón basándonos en la posición X
+                const isHeart = x > (canvas.width - 250);
+                
+                positions.push(
+                    (x - canvas.width / 2) * 0.08 + (Math.random() - 0.5) * 0.3,
+                    -(y - canvas.height / 2) * 0.08 + (Math.random() - 0.5) * 0.3,
+                    (Math.random() - 0.5) * 1.0
+                );
+                
+                if (isHeart) {
+                    colors.push(1, 0, 0); // Rojo intenso
+                } else {
+                    colors.push(1, 0.7, 0.75); // Rosa pastel
+                }
+            }
+        }
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+    const mat = new THREE.PointsMaterial({
+        size: 0.18,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+    });
+
+    return new THREE.Points(geo, mat);
+}
+    // Instanciar y posicionar el texto de Valentina en el hueco a la derecha de la galaxia con perspectiva
+// Busca donde instanciabas el texto y reemplaza por esto:
+const valentinaTextParticles = createValentinaPoints();
+
+valentinaTextParticles.position.set(60, 8, -50); // X: 45 lo mueve a la derecha, Z: -60 lo acerca un poco más al fondo
+valentinaTextParticles.rotation.set(0, -0.8, -0.20);   // Rotación en Y de -0.6 radianes para que se vea "de lado"
+valentinaTextParticles.scale.setScalar(1.5);       // Un poco más grande para compensar la perspectiva
+
+scene.add(valentinaTextParticles);
+
+
+
     // 2. LUNA GIGANTE DESENFOCADA
     const moonGeo = new THREE.SphereGeometry(18, 32, 32);
     const moonMat = new THREE.MeshBasicMaterial({
@@ -521,6 +771,7 @@
     window.addEventListener("touchstart", onHeartClick, { passive: true });
 
     const clock = new THREE.Clock();
+    let cameraPrevPos = camera.position.clone();
     // --- NUEVO: Configuración de Audio para el Latido ---
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const source = audioCtx.createMediaElementSource(bgMusic);
@@ -541,13 +792,15 @@
 
         if (bloomPass.strength > 2.2) bloomPass.strength -= 3.5 * delta;
 
-        if (introActive && !document.getElementById('intro-screen')) {
-            camera.position.lerp(targetCameraPos, 0.035);
-            if (camera.position.distanceTo(targetCameraPos) < 0.2) {
-                camera.position.copy(targetCameraPos);
-                introActive = false; 
-            }
-        }
+if (introActive && !document.getElementById('intro-screen')) {
+    camera.position.lerp(targetCameraPos, 0.035);
+    
+    // Si la cámara ya llegó, desactivamos el lerp permanentemente
+    if (camera.position.distanceTo(targetCameraPos) < 0.5) {
+        camera.position.copy(targetCameraPos);
+        introActive = false; // ESTO ES VITAL: detiene el movimiento automático
+    }
+}
 
         // Partículas Cinéticas del Corazón Principal
         const heartPosArr = heartGeometry.attributes.position.array;
@@ -570,18 +823,20 @@
         galaxyGeometry.attributes.position.needsUpdate = true;
 
         galaxySystem.rotation.y += 0.03 * delta;
-// --- MODIFICACIÓN: Latido sincronizado solo para el corazón ---
+
+        // NUEVO: Latido sincronizado para el Corazón y el núcleo
         analyser.getByteFrequencyData(dataArray);
         let sum = 0;
-        for(let i = 0; i < 10; i++) sum += dataArray[i];
+        for(let i = 0; i < 10; i++) sum += dataArray[i]; // Bajos
         let average = sum / 10;
         
         // Calculamos la escala basada en el audio
-        let beatScale = 1.0 + (average / 255) * 0.4; 
+        let beatScale = 1.0 + (average / 255) * 0.4; // Hasta 1.4x de escala
         
-        // Aplicamos la escala solo al centro y a las partículas del corazón
+        // Aplicamos la escala al centro y a las partículas del corazón (no a la galaxia entera)
         coreMesh.scale.setScalar(beatScale);
         heartSystem.scale.setScalar(beatScale);      
+        
         // Rotar e iluminar Nebulosas de fondo ligeramente
         nebulaGroup.rotation.y += 0.008 * delta;
         nebulaMaterials.forEach((mat, idx) => {
@@ -596,6 +851,66 @@
             flashPositionsArr[i*3] += Math.sin(data.phase * 0.2) * 0.01;
         }
         flashMat.size = 1.2 + Math.sin(time * 4.0) * 0.4;
+        //latidonombre
+        if (valentinaTextParticles) {
+            const textPulse = 1.5 + Math.sin(time * 1.5) * 0.05;
+            valentinaTextParticles.scale.setScalar(textPulse);
+            valentinaTextParticles.position.y = 8 + Math.sin(time * 0.8) * 0.16;
+        }
+
+        // Actualizar polvo estelar centelleante
+        for (let i = 0; i < stardustCount; i++) {
+            stardustAlphas[i] = 0.12 + 0.14 * (0.5 + Math.sin(time * 1.05 + i * 0.37));
+        }
+        stardustGeo.attributes.alpha.needsUpdate = true;
+
+        // Rotar halo lentamente
+        haloRing.rotation.y += 0.002 * delta;
+
+        // Brillo suave de nebulosas secundarias
+        secondaryNebulaGroup.children.forEach((mesh, idx) => {
+            mesh.material.opacity = 0.08 + 0.05 * Math.sin(time * 0.25 + idx);
+            mesh.rotation.z += 0.0012 * delta;
+        });
+
+        // Esferas de luz con trail
+        glowSpheres.forEach((item, idx) => {
+            item.mesh.position.addScaledVector(item.velocity, delta);
+            item.mesh.position.x += Math.sin(time * 0.8 + idx) * 0.01;
+            item.mesh.position.y += Math.sin(time * 0.7 + idx * 0.9) * 0.002;
+            if (item.mesh.position.x > 58 || item.mesh.position.x < -58) item.velocity.x *= -1;
+            if (item.mesh.position.y > 22 || item.mesh.position.y < -4) item.velocity.y *= -1;
+            if (item.mesh.position.z > 18 || item.mesh.position.z < -92) item.velocity.z *= -1;
+            const trail = glowTrails[idx];
+            for (let j = trail.length - 1; j > 0; j--) {
+                trail.positions[j * 3] = trail.positions[(j - 1) * 3];
+                trail.positions[j * 3 + 1] = trail.positions[(j - 1) * 3 + 1];
+                trail.positions[j * 3 + 2] = trail.positions[(j - 1) * 3 + 2];
+            }
+            trail.positions[0] = item.mesh.position.x;
+            trail.positions[1] = item.mesh.position.y;
+            trail.positions[2] = item.mesh.position.z;
+            trail.line.geometry.attributes.position.needsUpdate = true;
+        });
+
+        // Paralaje de estrellas lejanas según movimiento de cámara
+        const deltaCam = new THREE.Vector3().subVectors(cameraPrevPos, camera.position).multiplyScalar(0.12);
+        const parallaxPositions = parallaxStarGeo.attributes.position.array;
+        for (let i = 0; i < parallaxStarCount; i++) {
+            parallaxPositions[i * 3] += deltaCam.x * (0.22 + (i / parallaxStarCount) * 0.28);
+            parallaxPositions[i * 3 + 1] += deltaCam.y * 0.18;
+            parallaxPositions[i * 3 + 2] += deltaCam.z * 0.14;
+            if (Math.abs(parallaxPositions[i * 3]) > 240 || Math.abs(parallaxPositions[i * 3 + 2]) > 240) {
+                parallaxPositions[i * 3] = (Math.random() - 0.5) * 220;
+                parallaxPositions[i * 3 + 1] = (Math.random() - 0.5) * 40 + 5;
+                parallaxPositions[i * 3 + 2] = -100 + (Math.random() - 0.5) * 80;
+            }
+        }
+        parallaxStarGeo.attributes.position.needsUpdate = true;
+        cameraPrevPos.copy(camera.position);
+
+        // Constelaciones con leve parpadeo
+        constellationLines.material.opacity = 0.12 + Math.sin(time * 0.23) * 0.03;
 
         // Animación de Mini Corazones de Luz
         const camPos = camera.position;
@@ -614,7 +929,7 @@
 
         // --- NUEVAS ESTRELLAS FUGACES COMPLETAMENTE OMNIDIRECCIONALES 360° ---
         shootingStars.forEach((star) => {
-            if(!star.active && Math.random() < 0.028) { 
+            if(!star.active && Math.random() < 0.028) { // 2.8% de probabilidad por frame
                 star.active = true;
                 star.timer = 0;
                 star.mesh.material.opacity = 1;
@@ -706,9 +1021,13 @@
     const infoText = document.getElementById('info');
     const diarioContenedor = document.getElementById('diario-contenedor');
     const diarioTexto = document.getElementById('diario-texto');
+    const diarioToggle = document.getElementById('diario-toggle');
+    const diarioNext = document.getElementById('diario-next');
+    const diarioPrev = document.getElementById('diario-prev');
 
     let noPressCount = 0;
     let cambioRazonTimer = null;
+    let diarioCollapsed = false;
 
     function mostrarCaraTriste() {
         noPressCount += 1;
@@ -751,26 +1070,66 @@
         }, 140);
     }
 
-    document.getElementById('diario-next').addEventListener('click', () => {
-        actualRazonIdx = (actualRazonIdx + 1) % razonesAmor.length;
-        transicionarRazon();
-    });
-    document.getElementById('diario-prev').addEventListener('click', () => {
-        actualRazonIdx = (actualRazonIdx - 1 + razonesAmor.length) % razonesAmor.length;
-        transicionarRazon();
-    });
+    if (diarioNext) {
+        diarioNext.addEventListener('click', () => {
+            actualRazonIdx = (actualRazonIdx + 1) % razonesAmor.length;
+            transicionarRazon();
+        });
+    }
+    if (diarioPrev) {
+        diarioPrev.addEventListener('click', () => {
+            actualRazonIdx = (actualRazonIdx - 1 + razonesAmor.length) % razonesAmor.length;
+            transicionarRazon();
+        });
+    }
 
-    btnSi.addEventListener('click', () => {
-        introScreen.classList.add('fade-out');
-        bgMusic.volume = 0.35; // 35% de volumen
-        bgMusic.play().catch(() => {});
-        audioCtx.resume(); // <--- AGREGA ESTA LÍNEA AQUÍ
-        infoText.style.display = 'block';
-        diarioContenedor.style.display = 'block';
-        bloomPass.strength = 5.5;
-        actualizarDiarioUI();
-        setTimeout(() => { introScreen.remove(); }, 1500);
-    });
+    if (diarioToggle) {
+        diarioToggle.addEventListener('click', () => {
+            diarioCollapsed = !diarioCollapsed;
+            if (!diarioContenedor) return;
+            if (diarioCollapsed) {
+                diarioContenedor.classList.add('diario-collapsed');
+                diarioToggle.setAttribute('aria-label', 'Abrir razones');
+                diarioToggle.textContent = '▲';
+            } else {
+                diarioContenedor.classList.remove('diario-collapsed');
+                diarioToggle.setAttribute('aria-label', 'Cerrar razones');
+                diarioToggle.textContent = '▼';
+            }
+        });
+    }
+
+btnSi.addEventListener('click', () => {
+    introScreen.classList.add('fade-out');
+    
+    // Al iniciar la transición, deshabilitamos el click para evitar doble ejecución
+    btnSi.style.pointerEvents = 'none';
+
+    // Esperamos a que la transición CSS termine
+    introScreen.addEventListener('transitionend', () => {
+        introScreen.remove();
+        
+        // --- AQUÍ ESTÁ LA CLAVE ---
+        // 1. Aseguramos que la cámara esté exactamente donde debe estar
+        camera.position.copy(targetCameraPos);
+        
+        // 2. Actualizamos el 'target' de los controles al centro (donde está el corazón)
+        controls.target.set(0, 6.5, 0); 
+        
+        // 3. Activamos controles
+        controls.enabled = true;
+        controls.update(); 
+        
+    }, { once: true });
+
+    bgMusic.volume = 0.35;
+    bgMusic.play().catch(() => {});
+    audioCtx.resume();
+    if (infoText) infoText.style.display = 'block';
+    if (diarioContenedor) diarioContenedor.style.display = 'block';
+    bloomPass.strength = 5.5;
+    actualizarDiarioUI();
+});
 
     setInterval(() => {
         if (document.getElementById('intro-screen')) return;
