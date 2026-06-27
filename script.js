@@ -702,19 +702,37 @@
     const introScreen = document.getElementById('intro-screen');
     const btnSi = document.getElementById('btn-si');
     const btnNo = document.getElementById('btn-no');
+    const sadFace = document.getElementById('sad-face');
     const infoText = document.getElementById('info');
     const diarioContenedor = document.getElementById('diario-contenedor');
 
-    function huirBotonNo() {
-        const padding = 80;
-        const xMax = window.innerWidth - btnNo.offsetWidth - padding;
-        const yMax = window.innerHeight - btnNo.offsetHeight - padding;
-        const randomX = Math.max(padding, Math.random() * xMax);
-        const randomY = Math.max(padding, Math.random() * yMax);
-        btnNo.style.position = 'fixed'; btnNo.style.left = `${randomX}px`; btnNo.style.top = `${randomY}px`; btnNo.style.margin = '0';
+    let noPressCount = 0;
+
+    function mostrarCaraTriste() {
+        noPressCount += 1;
+        const scale = Math.min(1.18 + noPressCount * 0.06, 1.4);
+        btnNo.style.transform = `scale(${scale})`;
+        sadFace.classList.add('show');
+        clearTimeout(sadFace.hideTimeout);
+        sadFace.hideTimeout = setTimeout(() => {
+            sadFace.classList.remove('show');
+        }, 700);
     }
-    btnNo.addEventListener('mouseover', huirBotonNo);
-    btnNo.addEventListener('touchstart', (e) => { e.preventDefault(); huirBotonNo(); });
+
+    btnNo.addEventListener('mouseenter', mostrarCaraTriste);
+    btnNo.addEventListener('mouseover', mostrarCaraTriste);
+    btnNo.addEventListener('pointerenter', mostrarCaraTriste);
+    btnNo.addEventListener('pointerdown', mostrarCaraTriste);
+    btnNo.addEventListener('touchstart', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        mostrarCaraTriste();
+    }, { passive: false });
+    btnNo.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        mostrarCaraTriste();
+    });
 
     document.getElementById('diario-next').addEventListener('click', () => {
         actualRazonIdx = (actualRazonIdx + 1) % razonesAmor.length;
