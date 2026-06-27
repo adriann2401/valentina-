@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universo de Amor Pastel 2026</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="intro-screen">
+        <div class="intro-box">
+            <h1>¿Tú me amas?</h1>
+            <div class="btn-container">
+                <button id="btn-si">Sí ❤️</button>
+                <button id="btn-no">No 💔</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="info" style="display: none;">✨ Arrastra para girar | Toca la pantalla para una razón al azar ✨</div>
+
+    <div id="diario-contenedor" style="display: none;">
+        <div class="diario-header">
+            <span>Nuestras Razones</span>
+            <span id="diario-index">Razon 1/100</span>
+        </div>
+        <p id="diario-texto">Porque te amo xd</p>
+        <div class="diario-controles">
+            <button id="diario-prev">◀</button>
+            <button id="diario-next">▶</button>
+        </div>
+    </div>
+        <audio id="bgMusic" loop>
+            <source src="musica/fondo.mp3" type="audio/mpeg">
+        </audio>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
