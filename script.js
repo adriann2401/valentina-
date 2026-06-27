@@ -108,6 +108,7 @@ import * as THREE from 'three';
     const heartVelocities = new Float32Array(heartParticleCount * 3);
     const heartColors = new Float32Array(heartParticleCount * 3);
     const heartAlphas = new Float32Array(heartParticleCount);
+    const heartEdgePositions = [];
 
     const galaxyGeometry = new THREE.BufferGeometry();
     const galaxyPositions = new Float32Array(galaxyParticleCount * 3);
@@ -145,6 +146,11 @@ import * as THREE from 'three';
         heartVelocities[i3] = heartVelocities[i3 + 1] = heartVelocities[i3 + 2] = 0;
         heartColors[i3] = mixedColor.r; heartColors[i3 + 1] = mixedColor.g; heartColors[i3 + 2] = mixedColor.b;
         heartAlphas[i] = 1.0;
+
+        const distFromCenter = Math.hypot(x, y - 6.5, z);
+        if (distFromCenter > 4.8 && Math.random() < 0.6) {
+            heartEdgePositions.push(new THREE.Vector3(x, y, z));
+        }
     }
 
     for (let i = 0; i < galaxyParticleCount; i++) {
@@ -216,11 +222,7 @@ import * as THREE from 'three';
     scene.add(heartSystem);
     scene.add(galaxySystem);
 
-    const coreGeo = new THREE.SphereGeometry(0.7, 16, 16);
-    const coreMat = new THREE.MeshStandardMaterial({ color: 0x221a22, emissive: 0xfff0f5, emissiveIntensity: 1.2 });
-    const coreMesh = new THREE.Mesh(coreGeo, coreMat);
-    coreMesh.position.y = 6.5; 
-    scene.add(coreMesh);
+
     const heartHitbox = new THREE.Mesh(
         new THREE.SphereGeometry(6, 24, 24),
         new THREE.MeshBasicMaterial({ visible: false })
@@ -509,6 +511,7 @@ function createValentinaPoints() {
     });
 
     return new THREE.Points(geo, mat);
+    
 }
     // Instanciar y posicionar el texto de Valentina en el hueco a la derecha de la galaxia con perspectiva
 // Busca donde instanciabas el texto y reemplaza por esto:
@@ -701,8 +704,12 @@ scene.add(valentinaTextParticles);
     const centerLight = new THREE.PointLight(0xffffff, 2.5, 40); centerLight.position.set(0, 6.5, 0); scene.add(centerLight);
 
     // --- Click Burst Real Explosion ---
-    const burstCount = 80;
-    const burstMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(0.16, 4, 4), new THREE.MeshBasicMaterial({ color: 0xffffff }), burstCount);
+    const burstCount = 180;
+    const burstMesh = new THREE.InstancedMesh(
+        new THREE.SphereGeometry(0.24, 6, 6),
+        new THREE.MeshBasicMaterial({ color: 0xfff2f9, transparent: true, opacity: 0.88, blending: THREE.AdditiveBlending }),
+        burstCount
+    );
     scene.add(burstMesh);
     let burstActive = false; let burstTimer = 0; const burstParticles = []; 
 
@@ -741,8 +748,15 @@ scene.add(valentinaTextParticles);
         }
         burstActive = true; burstTimer = 0; burstMesh.visible = true;
         burstParticles.forEach((p) => {
-            p.pos.set(0, 6.5, 0); const theta = Math.random() * Math.PI * 2; const phi = Math.acos((Math.random() * 2) - 1); const speed = Math.random() * 18 + 7;
-            p.vel.set(Math.sin(phi) * Math.cos(theta) * speed, Math.sin(phi) * Math.sin(theta) * speed, Math.cos(phi) * speed);
+            const t = Math.random() * Math.PI * 2;
+            const hp = getHeartPoint(t, 0.42);
+            const origin = new THREE.Vector3(hp.x, hp.y + 6.5, hp.z);
+            p.pos.copy(origin);
+            const radial = new THREE.Vector3(hp.x, hp.y, hp.z).normalize();
+            const spread = new THREE.Vector3((Math.random() - 0.5) * 1.4, Math.random() * 0.8 - 0.1, (Math.random() - 0.5) * 1.4);
+            const direction = radial.add(spread).normalize();
+            const speed = 20 + Math.random() * 22;
+            p.vel.copy(direction.multiplyScalar(speed));
         });
     }
 
@@ -834,7 +848,6 @@ if (introActive && !document.getElementById('intro-screen')) {
         let beatScale = 1.0 + (average / 255) * 0.4; // Hasta 1.4x de escala
         
         // Aplicamos la escala al centro y a las partículas del corazón (no a la galaxia entera)
-        coreMesh.scale.setScalar(beatScale);
         heartSystem.scale.setScalar(beatScale);      
         
         // Rotar e iluminar Nebulosas de fondo ligeramente
