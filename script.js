@@ -705,8 +705,10 @@
     const sadFace = document.getElementById('sad-face');
     const infoText = document.getElementById('info');
     const diarioContenedor = document.getElementById('diario-contenedor');
+    const diarioTexto = document.getElementById('diario-texto');
 
     let noPressCount = 0;
+    let cambioRazonTimer = null;
 
     function mostrarCaraTriste() {
         noPressCount += 1;
@@ -734,13 +736,28 @@
         mostrarCaraTriste();
     });
 
+    function transicionarRazon() {
+        diarioTexto.classList.add('is-changing');
+        diarioContenedor.classList.add('diario-animating');
+        clearTimeout(cambioRazonTimer);
+        cambioRazonTimer = setTimeout(() => {
+            actualizarDiarioUI();
+            requestAnimationFrame(() => {
+                diarioTexto.classList.remove('is-changing');
+            });
+            setTimeout(() => {
+                diarioContenedor.classList.remove('diario-animating');
+            }, 180);
+        }, 140);
+    }
+
     document.getElementById('diario-next').addEventListener('click', () => {
         actualRazonIdx = (actualRazonIdx + 1) % razonesAmor.length;
-        actualizarDiarioUI();
+        transicionarRazon();
     });
     document.getElementById('diario-prev').addEventListener('click', () => {
         actualRazonIdx = (actualRazonIdx - 1 + razonesAmor.length) % razonesAmor.length;
-        actualizarDiarioUI();
+        transicionarRazon();
     });
 
     btnSi.addEventListener('click', () => {

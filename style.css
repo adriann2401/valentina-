@@ -199,7 +199,23 @@ button {
     box-sizing: border-box;
     z-index: 50;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 105, 120, 0.1);
-    transition: all 0.3s ease;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+    overflow: hidden;
+}
+
+#diario-contenedor.diario-animating {
+    transform: translateX(-50%) scale(1.02);
+    box-shadow: 0 14px 40px rgba(255, 105, 120, 0.16), 0 0 0 1px rgba(255, 182, 193, 0.18);
+}
+
+#diario-contenedor.diario-animating::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 0%, rgba(255, 224, 230, 0.14) 45%, transparent 70%);
+    transform: translateX(-120%);
+    animation: diarioShine 0.45s ease;
+    pointer-events: none;
 }
 
 .diario-header {
@@ -226,6 +242,12 @@ button {
     align-items: center;
     justify-content: center;
     text-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+    transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+#diario-texto.is-changing {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
 }
 
 .diario-controles {
@@ -256,4 +278,9 @@ button {
         background: rgba(255, 130, 145, 0.2);
         border-color: #ffb6c1;
     }
+}
+
+@keyframes diarioShine {
+    0% { transform: translateX(-120%); }
+    100% { transform: translateX(120%); }
 }
